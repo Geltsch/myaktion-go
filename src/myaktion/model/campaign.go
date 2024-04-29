@@ -23,3 +23,13 @@ type Campaign struct {
 	AmountDonatedSoFar float64    `gorm:"-"`
 	Account            Account    `gorm:"embedded;embeddedPrefix:account_"`
 }
+
+func (c *Campaign) AfterFind(tx *gorm.DB) (err error) {
+	var sum float64
+	result := tx.Model(&Donation{}).Select("ifnull(sum(amount),0)").Where("campaign_id = ?", c.ID).Scan(&sum)
+	if result.Error != nil {
+		return result.Error
+	}
+	c.AmountDonatedSoFar = sum
+	return nil
+}
